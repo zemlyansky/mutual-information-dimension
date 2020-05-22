@@ -18,10 +18,19 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   Contact: Mahito Sugiyama <mahito.sugiyama@tuebingen.mpg.de>
-  
+
   Please refer the following article in your published research:
   Sugiyama, M., Borgwardt, K.M.: Measuring Statistical Dependence via the Mutual Information Dimension,  
   Proceedings of the 23rd International Joint Conference on Artificial Intelligence (IJCAI 2013), Beijing, China, Aug., 2013.
+
+#------------------------------------------------------------------------------------------------------#
+ Ported to WebAssembly by Anton Zemlyansky 
+
+ - removed file interface
+ - removed unused variables
+ - main function converted to a function that returns mid value
+
+ May 2020
 */
 
 #include <stdio.h>
@@ -36,46 +45,6 @@
 #define BASE4 4
 #define ROW_LENGTH 100
 #define err(x) {printf("%s\n", (x));return;}
-
-// Get the number of lines
-long int getFile(FILE **fp, char *filename) {
-  char *p, row[ROW_LENGTH];
-  long int n = 1;
-
-  if ((*fp=fopen(filename,"r")) == NULL) {
-    printf("%s: cannot open the file\n", filename);
-    return 0;
-  }
-
-  fgets(row, sizeof(row), *fp);
-  p = strtok(row, ",\n");
-  while (p != NULL) {
-    p = strtok(NULL, ",\n");
-  }
-
-  while (fgets(row, sizeof(row), *fp)) n++;
-
-  return n;
-}
-
-// Read a data file
-void readFile(FILE *fp, double *x, double *y) {
-  char *p, *ends, row[ROW_LENGTH];
-  long int i = 0;
-
-  rewind(fp);
-  // input each line
-  while(fgets(row, sizeof(row), fp) != NULL) {
-    // divide at commas and LF
-    p = strtok(row, ",\n");
-    while (p != NULL) {
-      if (i % BASE == 0) x[i / BASE] = strtod(p, &ends);
-      else y[(i - 1) / BASE] = strtod(p, &ends);
-      i++;
-      p = strtok(NULL, ",\n");
-    }
-  }
-}
 
 // Min-max normalization to [0, 1] for each axis
 void normalize(double *x, long int n) {
@@ -228,7 +197,7 @@ double keepmax(double x, double y, double xy) {
 // Calculate information dimension for x, y, and xy
 void idim(double *x, double *y, long int n, int level_max, int level_max_cov, double *idim_x, double *idim_y, double *idim_xy) {
   int level, k, m = 0, width, *codes_x, *codes_y;
-  long int i, j, *B_x, *B_y, **B_xy;
+  long int i, *B_x, *B_y, **B_xy;
   double *result_x, *result_y, *result_xy;
 
   codes_x = (int *)malloc(sizeof(int) * n);
@@ -300,26 +269,14 @@ void idim(double *x, double *y, long int n, int level_max, int level_max_cov, do
   free(result_x); free(result_y); free(result_xy);
 }
 
-// Main function
-int main(int argc, char *argv[]) {
+// MID function
+double mid(double* x, double* y, int n) {
   int level_max, level_max_cov;
-  long int i, n;
-  double idim_x, idim_y, idim_xy, mid, *x, *y;
-  FILE *fp;
+  double idim_x, idim_y, idim_xy, mid;
 
-  if (argc < 2) err("Error. Please input a filename");
-
-  // Get the number of objects n
-  n = getFile(&fp, argv[1]);
-  if (n == 0) err("Error. There exist no data in the file.");
-
-  // Prepare memory for a dataset
-  x = (double *)malloc(sizeof(double) * n);
-  y = (double *)malloc(sizeof(double) * n);
-
-  // Read a data file
-  readFile(fp, x, y);
-  fclose(fp);
+  // printf("n:  %d\n", n);
+  // printf("x:  %f\n", x[0]);
+  // printf("y:  %f\n", y[0]);
 
   // The maximum level
   level_max = floor(log(n) / log(BASE));
@@ -331,10 +288,10 @@ int main(int argc, char *argv[]) {
   if (mid > 1) mid = 1;
   if (mid < 0) mid = 0;
 
-  printf("idim_x:  %f\n", idim_x);
-  printf("idim_y:  %f\n", idim_y);
-  printf("idim_xy: %f\n", idim_xy);
-  printf("MID:     %f\n", mid);
+  // printf("idim_x:  %f\n", idim_x);
+  // printf("idim_y:  %f\n", idim_y);
+  // printf("idim_xy: %f\n", idim_xy);
+  // printf("MID:     %f\n", mid);
 
-  return 0;
+  return mid;
 }
