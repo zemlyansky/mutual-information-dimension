@@ -1,0 +1,4 @@
+node_modules/
+sampledata/
+*.swp
+npm-debug.log
